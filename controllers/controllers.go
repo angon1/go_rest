@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"go-rest/dbcontroll"
 	"go-rest/models"
-
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"gopkg.in/go-playground/validator.v9"
@@ -30,7 +31,9 @@ func MessagesGet(writer http.ResponseWriter, request *http.Request) {
 }
 
 func generateRandomCode(msg models.Message) (md5Hash string) {
-	tempStr := msg.Title + msg.Content + msg.Email + time.Now().String()
+	seed := rand.NewSource(time.Now().UnixNano())
+	randomGenerator := rand.New(seed)
+	tempStr := msg.Title + msg.Content + msg.Email + time.Now().String() + strconv.Itoa(randomGenerator.Int())
 	messageString := []byte(tempStr)
 	md5Hash = fmt.Sprintf("%x", md5.Sum(messageString))
 	return md5Hash
