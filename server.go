@@ -1,7 +1,8 @@
 package main
 
 import (
-	"go-rest/models"
+	"go-rest/controllers"
+
 	"log"
 	"net/http"
 
@@ -11,13 +12,13 @@ import (
 func main() {
 	router := mux.NewRouter()
 	messagesApi := router.PathPrefix("/api/messages").Subrouter()
-	models.ConnectDataBase()
-	defer models.DB.Close()
-	router.HandleFunc("/", home)
-	messagesApi.HandleFunc("/", messagesGet).Methods(http.MethodGet)
-	messagesApi.HandleFunc("", messagesPost).Methods(http.MethodPost)
-	messagesApi.HandleFunc("/{messageID}", messagesDelete).Methods(http.MethodDelete)
-	messagesApi.HandleFunc("", home)
+	controllers.ConnectDb()
+	defer controllers.CloseDb()
+	router.HandleFunc("/", controllers.Home)
+	messagesApi.HandleFunc("/", controllers.MessagesGet).Methods(http.MethodGet)
+	messagesApi.HandleFunc("", controllers.MessagesPost).Methods(http.MethodPost)
+	messagesApi.HandleFunc("/{messageID}", controllers.MessagesDelete).Methods(http.MethodDelete)
+	messagesApi.HandleFunc("", controllers.Home)
 	log.Fatal(http.ListenAndServe(":8080", router))
 
 }

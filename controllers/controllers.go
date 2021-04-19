@@ -1,9 +1,10 @@
-package main
+package controllers
 
 import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"go-rest/dbcontroll"
 	"go-rest/models"
 
 	"net/http"
@@ -15,20 +16,20 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-func messagesGet(writer http.ResponseWriter, request *http.Request) {
+func MessagesGet(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusOK)
 	email := request.URL.Query().Get("email")
 	var msgs []models.Message
 	if email != "" {
-		models.DB.Where("email = ?", email).Find(&msgs)
+		dbcontroll.DB.Where("email = ?", email).Find(&msgs)
 	} else {
-		models.DB.Find(&msgs)
+		dbcontroll.DB.Find(&msgs)
 	}
 	fmt.Fprintf(writer, "message: %+v email: %s", msgs, email)
 }
 
-func GenerateRandomCode(msg models.Message) (md5Hash string) {
+func generateRandomCode(msg models.Message) (md5Hash string) {
 	tempStr := msg.Title + msg.Content + msg.Email + time.Now().String()
 	messageString := []byte(tempStr)
 	md5Hash = fmt.Sprintf("%x", md5.Sum(messageString))
@@ -36,9 +37,9 @@ func GenerateRandomCode(msg models.Message) (md5Hash string) {
 }
 
 func createMessage(msg models.Message) (hash string) {
-	hash = GenerateRandomCode(msg)
+	hash = generateRandomCode(msg)
 	msg.MessageCode = hash
-	models.DB.Create(&models.Message{
+	dbcontroll.DB.Create(&models.Message{
 		ID:          0,
 		Title:       msg.Title,
 		Content:     msg.Content,
@@ -48,7 +49,7 @@ func createMessage(msg models.Message) (hash string) {
 	return hash
 }
 
-func messagesPost(writer http.ResponseWriter, request *http.Request) {
+func MessagesPost(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	var msg models.Message
 	err := json.NewDecoder(request.Body).Decode(&msg)
@@ -69,23 +70,31 @@ func messagesPost(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func messagesDelete(writer http.ResponseWriter, request *http.Request) {
+func MessagesDelete(writer http.ResponseWriter, request *http.Request) {
 	pathParams := mux.Vars(request)
 	writer.Header().Set("Content-Type", "application/json")
 
 	messageID := pathParams["messageID"]
 	var msg models.Message
-	result := models.DB.Where("message_code = ?", messageID).First(&msg)
+	result := dbcontroll.DB.Where("message_code = ?", messageID).First(&msg)
 	if result.RowsAffected != 0 {
-		models.DB.Delete(&msg)
+		dbcontroll.DB.Delete(&msg)
 		writer.WriteHeader(http.StatusOK)
 	} else {
 		writer.WriteHeader(http.StatusNotFound)
 	}
 }
 
-func home(writer http.ResponseWriter, request *http.Request) {
+func Home(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(http.StatusNotFound)
 	writer.Write([]byte(`{"message": "not found"}`))
+}
+
+func ConnectDb() {
+	dbcontroll.ConnectDataBase()
+}
+
+func CloseDb() {
+	dbcontroll.DB.Close()
 }
